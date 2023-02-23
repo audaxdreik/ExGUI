@@ -98,69 +98,59 @@ function Get-TestData {
 # validate form data before submitting query or update
 function Test-FormData {
     [CmdletBinding()]
-    param ()
+    param (
+        [string]$FirstName,
+        [string]$LastName,
+        [string]$DOB,
+        [bool]$Query
+    )
 
-    $validation = if ((-not $WPFTextBoxFirstName.Text) -or (-not $WPFTextBoxLastName.Text)) {
-
-        $WPFTextBlockStatus.Text = 'First and Last Name required'
-
-        $false
-
-    } elseif ($WPFRadioButtonQuery.IsChecked) {
-        $true
+    $result = if (-not $FirstName -or -not $LastName) {
+        @{ Validation = $false; Message = 'First and Last Name required' }
+    } elseif ($Query) {
+        @{ Validation = $true; Message = '' }
     } else {
 
-        if (-not $WPFDatePickerDOB.SelectedDate) {
-
-            $WPFTextBlockStatus.Text = 'Must have DOB selected'
-
-            $false
-
+        if ([datetime]$DOB -gt (Get-Date)){
+            @{ Validation = $false; Message = 'DOB cannot be in future' }
         } else {
-
-            if ($WPFDatePickerDOB.SelectedDate -gt (Get-Date)) {
-
-                $WPFTextBlockStatus.Text = 'DOB cannot be in future'
-
-                $false
-
-            } else {
-                $true
-            }
-
+            @{ Validation = $true; Message = '' }
         }
 
     }
 
-    $validation
+    $result
 
 }
 
 function Update-ExGUIEntry {
     [CmdletBinding()]
-    param ()
-
-    $firstName = $WPFTextBoxFirstName.Text
-    $lastName  = $WPFTextBoxLastName.Text
+    param (
+        [string]$FirstName,
+        [string]$LastName,
+        [datetime]$DOB
+    )
 
     $data = @{
-        FirstName = $firstName
-        LastName  = $lastName
-        DOB       = $WPFDatePickerDOB.SelectedDate.ToString('MM/dd/yyyy')
+        FirstName = $FirstName
+        LastName  = $LastName
+        DOB       = $DOB.ToString('MM/dd/yyyy')
     }
 
-    $data | ConvertTo-Json -Compress | Set-Content -Path ".\sample\$firstName$lastName.json"
+    $data | ConvertTo-Json -Compress | Set-Content -Path ".\sample\$FirstName$LastName.json"
 
 }
 
 # the math on this seems off compared to other online calculators tested against
 function Get-Age {
     [CmdletBinding()]
-    param ()
+    param (
+        [datetime]$DOB
+    )
 
-    $age = [datetime]((Get-Date) - $WPFDatePickerDOB.SelectedDate).Ticks
+    $age = [datetime]((Get-Date) - $DOB).Ticks
 
-    $WPFTextBoxAge.Text = "$($age.Year - 1)Y, $($age.Month - 1)M, $($age.Day - 1)D"
+    "$($age.Year - 1)Y, $($age.Month - 1)M, $($age.Day - 1)D"
 
 }
 
@@ -171,18 +161,22 @@ function Get-Age {
 
 $WPFButtonExecute.Add_Click({
 
-    if (-not (Test-FormData)) {
+    $firstName = $WPFTextBoxFirstName.Text
+    $lastName  = $WPFTextBoxLastName.Text
+    $dob       = $WPFDatePickerDOB.SelectedDate
 
-        Write-Verbose -Message 'form data could not be validated'
+    $result = Test-FormData -FirstName $firstName -LastName $lastName -DOB $dob -Query:$WPFRadioButtonQuery.IsChecked
 
+    $WPFTextBlockStatus.Text = $result.Message
+
+    if (-not $result.Validation) {
         return
-
     }
 
     if ($WPFRadioButtonQuery.IsChecked) {
 
         $user = $script:users | Where-Object -FilterScript {
-            ($_.FirstName -match $WPFTextBoxFirstName.Text) -and ($_.LastName -match $WPFTextBoxLastName.Text)
+            ($_.FirstName -match $firstName) -and ($_.LastName -match $lastName)
         }
 
         if ($user) {
@@ -191,19 +185,19 @@ $WPFButtonExecute.Add_Click({
 
             $WPFDatePickerDOB.SelectedDate = $user.DOB
 
-            Get-Age
+            $WPFTextBoxAge.Text = Get-Age -DOB $user.DOB
 
         } else {
-            $WPFTextBlockStatus.Text = "No user found: $($WPFTextBoxFirstName.Text) $($WPFTextBoxLastName.Text)"
+            $WPFTextBlockStatus.Text = "No user found: $firstName $lastName"
         }
 
     } else {
 
-        Update-ExGUIEntry
+        Update-ExGUIEntry -FirstName $firstName -LastName $lastName -DOB $dob
 
-        Get-Age
+        $WPFTextBoxAge.Text = Get-Age -DOB $dob
 
-        $WPFTextBlockStatus.Text = "User created: $($WPFTextBoxFirstName.Text) $($WPFTextBoxLastName.Text)"
+        $WPFTextBlockStatus.Text = "User created: $firstName $lastName"
 
     }
 
