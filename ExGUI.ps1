@@ -123,6 +123,33 @@ function Test-FormData {
 
 }
 
+# will be more relevant when building out SQL
+function Get-ExGUIEntry {
+    [CmdletBinding()]
+    param (
+        [string]$FirstName,
+        [string]$LastName
+    )
+
+    $result = @{
+        User    = $null
+        Message = ''
+    }
+
+    $user = $script:users | Where-Object -FilterScript {
+        ($_.FirstName -like $firstName) -and ($_.LastName -like $lastName)
+    }
+
+    $result = if (-not $user) {
+        @{ User = $null; Message = "No user found: $FirstName $LastName" }
+    } else {
+        @{ User = $user; Message = "Found user: $($user.FirstName) $($user.LastName)" }
+    }
+
+    $result
+
+}
+
 function Update-ExGUIEntry {
     [CmdletBinding()]
     param (
@@ -169,35 +196,36 @@ $WPFButtonExecute.Add_Click({
 
     $WPFTextBlockStatus.Text = $result.Message
 
+    $query = Get-ExGUIEntry -FirstName $firstName -LastName $lastName
+
     if (-not $result.Validation) {
         return
     }
 
     if ($WPFRadioButtonQuery.IsChecked) {
 
-        $user = $script:users | Where-Object -FilterScript {
-            ($_.FirstName -match $firstName) -and ($_.LastName -match $lastName)
-        }
+        $WPFTextBlockStatus.Text = $query.Message
 
-        if ($user) {
+        $WPFDatePickerDOB.SelectedDate = $query.User.DOB
 
-            $WPFTextBlockStatus.Text = "Found user: $($user.FirstName) $($user.LastName)"
-
-            $WPFDatePickerDOB.SelectedDate = $user.DOB
-
-            $WPFTextBoxAge.Text = Get-Age -DOB $user.DOB
-
+        if ($query.User) {
+            $WPFTextBoxAge.Text = Get-Age -DOB $query.User.DOB
         } else {
-            $WPFTextBlockStatus.Text = "No user found: $firstName $lastName"
+            $WPFTextBoxAge.Text = ''
         }
 
     } else {
 
+        if ($query) {
+            # TODO: implement pop-up warning asking to proceed?
+            Write-Warning -Message "User [$firstName $lastName] already exists, overwriting"
+        }
+
         Update-ExGUIEntry -FirstName $firstName -LastName $lastName -DOB $dob
 
-        $WPFTextBoxAge.Text = Get-Age -DOB $dob
-
         $WPFTextBlockStatus.Text = "User created: $firstName $lastName"
+
+        $WPFTextBoxAge.Text = Get-Age -DOB $dob
 
     }
 
