@@ -196,11 +196,11 @@ $WPFButtonExecute.Add_Click({
 
     $WPFTextBlockStatus.Text = $result.Message
 
-    $query = Get-ExGUIEntry -FirstName $firstName -LastName $lastName
-
     if (-not $result.Validation) {
         return
     }
+
+    $query = Get-ExGUIEntry -FirstName $firstName -LastName $lastName
 
     if ($WPFRadioButtonQuery.IsChecked) {
 
