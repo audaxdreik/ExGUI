@@ -142,10 +142,15 @@ function Update-ExGUIEntry {
     param (
         [string]$FirstName,
         [string]$LastName,
-        [datetime]$DOB
+        [datetime]$DOB,
+        [bool]$Update
     )
 
-    $query = "INSERT INTO Test (FirstName,LastName,DOB) VALUES ('$FirstName','$LastName','$($DOB.ToString('MM/dd/yyyy'))')"
+    $query = if ($Update) {
+        "UPDATE Test SET DOB = '$($DOB.ToString('MM/dd/yyyy'))' WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
+    } else {
+        "INSERT INTO Test (FirstName,LastName,DOB) VALUES ('$FirstName','$LastName','$($DOB.ToString('MM/dd/yyyy'))')"
+    }
 
     try {
 
@@ -207,12 +212,26 @@ $WPFButtonExecute.Add_Click({
 
     } else {
 
+        $update = $false
+
         if ($query.User) {
-            # TODO: implement pop-up warning asking to proceed?
-            Write-Warning -Message "User [$firstName $lastName] already exists, overwriting"
+
+            $messagePrompt = [System.Windows.MessageBox]::Show(
+                "User [$firstName $lastName] already exists, overwrite entry?",
+                'Confirm Entry Overwrite',
+                [System.Windows.MessageBoxButton]::YesNoCancel,
+                [System.Windows.MessageBoxImage]::Warning
+            )
+
+            if ($messagePrompt -notlike 'Yes') {
+                return
+            } else {
+                $update = $true
+            }
+
         }
 
-        Update-ExGUIEntry -FirstName $firstName -LastName $lastName -DOB $dob
+        Update-ExGUIEntry -FirstName $firstName -LastName $lastName -DOB $dob -Update:$update
 
         $WPFTextBlockStatus.Text = "User created: $firstName $lastName"
 
