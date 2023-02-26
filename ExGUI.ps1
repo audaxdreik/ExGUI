@@ -43,7 +43,7 @@ $xaml = [System.Xml.XmlDocument](@'
             </Grid>
         </GroupBox>
         <Button x:Name="ButtonExecute" Content="Execute" Margin="13,186,0,0" Grid.Column="1" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" Width="128"/>
-        <StatusBar x:Name="StatusBar" HorizontalAlignment="Left" Height="17" Margin="0,223,0,0" VerticalAlignment="Top" Width="320" Grid.ColumnSpan="2">
+        <StatusBar x:Name="StatusBar" HorizontalAlignment="Left" Margin="0,223,0,0" Width="320" Grid.ColumnSpan="2">
             <TextBlock x:Name="TextBlockStatus" TextWrapping="Wrap"/>
         </StatusBar>
 
