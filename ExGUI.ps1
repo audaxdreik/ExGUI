@@ -1,3 +1,5 @@
+#Requires -Modules PSSQLite
+
 [CmdletBinding()]
 param ()
 
@@ -83,18 +85,6 @@ Get-Variable -Name 'WPF*' | ForEach-Object -Process {
 #region App Functions =================================================================================================
 # Note: application functions
 
-# load some test data, will be replaced by SQL connection later
-function Get-TestData {
-    [CmdletBinding()]
-    param ()
-
-    # ignore this scoped variable for now
-    $script:users = Get-ChildItem -Path '.\sample' | ForEach-Object -Process {
-        Get-Content -Path $_.FullName | ConvertFrom-Json
-    }
-
-}
-
 # validate form data before submitting query or update
 function Test-FormData {
     [CmdletBinding()]
@@ -111,7 +101,9 @@ function Test-FormData {
         @{ Validation = $true; Message = '' }
     } else {
 
-        if ([datetime]$DOB -gt (Get-Date)){
+        if (-not $DOB) {
+            @{ Validation = $false; Message = 'must specify DOB for entry' }
+        } elseif ([datetime]$DOB -gt (Get-Date)){
             @{ Validation = $false; Message = 'DOB cannot be in future' }
         } else {
             @{ Validation = $true; Message = '' }
@@ -131,14 +123,9 @@ function Get-ExGUIEntry {
         [string]$LastName
     )
 
-    $result = @{
-        User    = $null
-        Message = ''
-    }
+    $query = "SELECT * FROM Test WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
 
-    $user = $script:users | Where-Object -FilterScript {
-        ($_.FirstName -like $firstName) -and ($_.LastName -like $lastName)
-    }
+    $user = Invoke-SqliteQuery -DataSource '.\exdb.db' -Query $query
 
     $result = if (-not $user) {
         @{ User = $null; Message = "No user found: $FirstName $LastName" }
@@ -158,13 +145,17 @@ function Update-ExGUIEntry {
         [datetime]$DOB
     )
 
-    $data = @{
-        FirstName = $FirstName
-        LastName  = $LastName
-        DOB       = $DOB.ToString('MM/dd/yyyy')
-    }
+    $query = "INSERT INTO Test (FirstName,LastName,DOB) VALUES ('$FirstName','$LastName','$($DOB.ToString('MM/dd/yyyy'))')"
 
-    $data | ConvertTo-Json -Compress | Set-Content -Path ".\sample\$FirstName$LastName.json"
+    try {
+
+        Invoke-SqliteQuery -DataSource '.\exdb.db' -Query $query -ErrorAction Stop
+
+        Write-Verbose -Message 'database records updated'
+
+    } catch {
+        Write-Warning -Message 'unable to update database, record not created'
+    }
 
 }
 
@@ -216,7 +207,7 @@ $WPFButtonExecute.Add_Click({
 
     } else {
 
-        if ($query) {
+        if ($query.User) {
             # TODO: implement pop-up warning asking to proceed?
             Write-Warning -Message "User [$firstName $lastName] already exists, overwriting"
         }
@@ -232,11 +223,7 @@ $WPFButtonExecute.Add_Click({
 })
 
 $form.Add_ContentRendered({
-
     Write-Verbose -Message 'form loaded, checking content'
-
-    Get-TestData
-
 })
 
 $form.Add_Closing({
