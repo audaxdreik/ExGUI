@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 #Requires -Modules PSSQLite
 
 [CmdletBinding()]
@@ -126,7 +127,7 @@ function Get-ExGUIEntry {
 
     $query = "SELECT * FROM Test WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
 
-    $user = Invoke-SqliteQuery -DataSource '.\exdb.db' -Query $query
+    $user = Invoke-SqliteQuery -DataSource "$PSScriptRoot\exdb.db" -Query $query
 
     $result = if (-not $user) {
         @{ User = $null; Message = "No user found: $FirstName $LastName" }
@@ -157,7 +158,7 @@ function Update-ExGUIEntry {
 
     try {
 
-        Invoke-SqliteQuery -DataSource '.\exdb.db' -Query $query -ErrorAction Stop
+        Invoke-SqliteQuery -DataSource "$PSScriptRoot\exdb.db" -Query $query -ErrorAction Stop
 
         Write-Verbose -Message 'database records updated'
 
