@@ -14,5 +14,8 @@ Quick prototyping: PowerShell will consume VS generated XAML to render WPF appli
 
 ## Work in Progress
 
-* Add application icon (base 64 encoding to avoid loose resources)
-* Apply polish. After core functionality achieved, add more robust error handling and test cases
+* Update documentation
+* Apply polish
+  * Error Handling
+  * Cleaner code
+  * Best practices

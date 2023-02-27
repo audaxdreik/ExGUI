@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param ()
 
-[void][System.Reflection.Assembly]::LoadWithPartialName('PresentationFramework')
+Add-Type -AssemblyName 'PresentationFramework', 'PresentationCore'
 
 #region Form Data =====================================================================================================
 # Note: load and set form data
@@ -57,7 +57,8 @@ try {
     $form = [Windows.Markup.XamlReader]::Load($reader)
 } catch {
 
-    Write-Warning -Message "Unable to parse XML, with error: $($Error[0])`n Ensure that there are NO SelectionChanged or TextChanged properties in your textboxes (PowerShell cannot process them)"
+    Write-Warning -Message "Unable to parse XML, with error: $($Error[0])"
+    Write-Warning -Message "Ensure NO SelectionChanged or TextChanged properties on textboxes (PS cannot process them)"
 
     throw
 
@@ -147,9 +148,11 @@ function Update-ExGUIEntry {
     )
 
     $query = if ($Update) {
-        "UPDATE Test SET DOB = '$($DOB.ToString('MM/dd/yyyy'))' WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
+        "UPDATE Test SET DOB = '$($DOB.ToString('MM/dd/yyyy'))'
+        WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
     } else {
-        "INSERT INTO Test (FirstName,LastName,DOB) VALUES ('$FirstName','$LastName','$($DOB.ToString('MM/dd/yyyy'))')"
+        "INSERT INTO Test (FirstName,LastName,DOB)
+        VALUES ('$FirstName','$LastName','$($DOB.ToString('MM/dd/yyyy'))')"
     }
 
     try {
@@ -241,8 +244,31 @@ $WPFButtonExecute.Add_Click({
 
 })
 
-$form.Add_ContentRendered({
-    Write-Verbose -Message 'form loaded, checking content'
+$form.add_Loaded({
+
+    $icon = 'AAABAAEAEBAAAAEAIABOAwAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAxVJREFUOI1lU89LI2cYfr6ZzNdxMm
+    JmxiRGg2CKKRGXhO0pbPcg6KmHIlLBm6eC9FC6l6WX/gV7caF3oR6EQg899bSIrOhSqeLB1EMijRgnP2YSdWaSzHwzX0+RdfvCe3h5n+fh4eF9Ceccn
+    xZjTOx0OnnLsnKcc6Lr+lUymfxHkqTwU2zs4yEIAun4+Pi7s7OzH4fD4RwhROCcI4oiyLL8b7FYfFsul3+hlA5HHDJy4DiOvre393u3232ZSqUE13Ux
+    GAwQRREURQEA2LaNdDr9YX19/ZuJiYnmo4Dv+3RnZ+ddLBZ74bouJEmCLMsghCCZTMKyLHiehzAMwRgDpfTvzc3Nl7IsewIAHBwc/PDw8PDCcRwYhoF
+    EIgFRFFEqlZDL5bC8vIzx8XEkk0lwzjEYDJ7v7+//BACC7/ufnZycvBJFEZIkIZFIwPM8jI2NIZvNghACQggWFhYQhiE0TUMURTg9Pf2+3++rQr1e/x
+    LAlCzLmJqagmmaj+QoiqCqKvr9Phhj6PV6MAxjlJ9Wq9W+ipmm+YVt27AsC7quo9frIZvNgjGGarWKWCyGTqeDcrmM6+treJ6HVqsFxhhub2/zQhiGo
+    iiKEEXxMe1mswnf93FxcYFarQZKKQRBQLfbRTweB+cc8XgcjDExput63XEcEELQbDaRy+VGSxSLRVBKUa1WcXR0hCAI0O/3H1vX9bowNzd3TCl1MpkM
+    Op0OLMuCLMvIZDJQFAWtVguGYaBSqUDTNDQaDWSzWQiCMJyfn38vqKp6v7i4+OvIYqPRgOu6qFQqODw8RBRFmJmZwcrKCmzbRrvdxv39PQqFwm+apjU
+    FAFhdXf253W5fq6qKm5sbAMDS0hJmZ2cxOTkJXdfhui4sywLnHEEQNNfW1l4/OeWrq6tn29vbf6bT6WnbtkEpxfT0NBhjuLu7g+/7YIxhOBy2t7a2vs
+    7n8389EQAAy7Iyu7u7by4vL79VFEUyDAO2bYMxBs/zgkKh8MfGxsardDpd/98zfVymac6en58vm6b5OeecpFKpWqlUepdKpWqiKD7B/gfXC4XIKZuYV
+    gAAAABJRU5ErkJggg==' -replace "[`n ]"
+
+    $bitmap = New-Object -TypeName 'System.Windows.Media.Imaging.BitMapImage'
+
+    $bitmap.BeginInit()
+    $bitmap.StreamSource = [System.IO.MemoryStream][System.Convert]::FromBase64String($icon)
+    $bitmap.EndInit()
+    $bitmap.Freeze()
+
+    $form.Icon = $bitmap
+
+    Write-Verbose -Message 'form loaded'
+
 })
 
 $form.Add_Closing({
