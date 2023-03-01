@@ -52,7 +52,7 @@ $xaml = [System.Xml.XmlDocument](@'
 </Window>
 '@ -replace 'mc:Ignorable="d"' -replace 'x:N','N' -replace '^<Win.*', '<Window')
 
-$reader = New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml
+$reader = New-Object -TypeName 'System.Xml.XmlNodeReader' -ArgumentList $xaml
 
 try {
     $form = [Windows.Markup.XamlReader]::Load($reader)
@@ -117,13 +117,17 @@ function Test-FormData {
 
 }
 
-# will be more relevant when building out SQL
+# queries DB for user info
 function Get-ExGUIEntry {
     [CmdletBinding()]
     param (
         [string]$FirstName,
         [string]$LastName
     )
+
+    # sanitize form input
+    $FirstName = $FirstName -replace "'", "''"
+    $LastName  = $LastName  -replace "'", "''"
 
     $query = "SELECT * FROM Test WHERE FirstName = '$FirstName' AND LastName = '$LastName'"
 
@@ -139,6 +143,7 @@ function Get-ExGUIEntry {
 
 }
 
+# inserts or updates new DB entry for user
 function Update-ExGUIEntry {
     [CmdletBinding()]
     param (
@@ -147,6 +152,10 @@ function Update-ExGUIEntry {
         [datetime]$DOB,
         [bool]$Update
     )
+
+    # sanitize form input
+    $FirstName = $FirstName -replace "'", "''"
+    $LastName  = $LastName  -replace "'", "''"
 
     $query = if ($Update) {
         "UPDATE Test SET DOB = '$($DOB.ToString('MM/dd/yyyy'))'
@@ -168,7 +177,8 @@ function Update-ExGUIEntry {
 
 }
 
-# the math on this seems off compared to other online calculators tested against
+# given a past [datetime], returns [string] of exact years, months, and days up to now
+# NOTE: math on this seems off compared to other online calculators tested against
 function Get-Age {
     [CmdletBinding()]
     param (
